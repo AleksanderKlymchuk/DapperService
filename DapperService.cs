@@ -10,29 +10,33 @@ using System.Reflection;
 using System.Configuration;
 namespace carservice
 {
-    public static class DapperService<T>
+     public class DapperService<T>
     {
-        private static IDbConnection connection;
-        private static string con = ConfigurationManager.AppSettings.Get("conString");
-        private static string tableName = typeof(T).Name;
-       
-        public  static IEnumerable<T> Get()
+        private  IDbConnection connection;
+        private  string con = ConfigurationManager.AppSettings.Get("conString");
+        private  string tableName = typeof(T).Name;
+
+       public DapperService(IDbConnection connection)
         {
-            using (connection = new SqlConnection(con))
+            this.connection = connection;
+        }
+        public  IEnumerable<T> Get()
+        {
+            using (connection)
             {
+                connection.ConnectionString = con;
                 connection.Open();
-                var obj=connection.Query<T>("select * from "+tableName);
-                connection.Close();
+                var obj = connection.Query<T>("select * from " + tableName);
                 return obj;
             }
         }
-        public static IEnumerable<T> Get(string query)
+        public IEnumerable<T> Get(string query)
         {
-            using (connection = new SqlConnection(con))
+            using (connection)
             {
+                connection.ConnectionString = con;
                 connection.Open();
                 var obj = connection.Query<T>(query);
-                connection.Close();
                 return obj;
             }
         }
@@ -40,45 +44,45 @@ namespace carservice
         /// the obj propery for primary key should be named id or "obj names first char"+_id e.g(c_id)
         /// </summary>
         /// <param name="obj"></param>
-        public static void Add(T obj)
+        public void Add(T obj)
         {
-            using (connection = new SqlConnection(con))
+            using (connection)
             {
+                connection.ConnectionString = con;
                 connection.Open();
-                connection.Execute(InsertQuery(obj),obj);
-                connection.Close();
+                connection.Execute(InsertQuery(obj), obj);
             }
         }
-        public static void Add(string query,object obj)
+        public void Add(string query, object obj)
         {
-            using (connection = new SqlConnection(con))
+            using (connection)
             {
+                connection.ConnectionString = con;
                 connection.Open();
-                connection.Execute(query,obj);
-                connection.Close();
+                connection.Execute(query, obj);
             }
         }
-        public static T GetProcedure(string procedureName )
+        public T GetProcedure(string procedureName)
         {
-            using (connection = new SqlConnection(con))
+            using (connection)
             {
+                connection.ConnectionString = con;
                 connection.Open();
-                var obj = connection.Query<T>(procedureName,CommandType.StoredProcedure).SingleOrDefault();
-                connection.Close();
+                var obj = connection.Query<T>(procedureName, CommandType.StoredProcedure).SingleOrDefault();
                 return obj;
             }
         }
-        public static T GetProcedure(string procedureName, object parameters)
+        public T GetProcedure(string procedureName, object parameters)
         {
-            using (connection = new SqlConnection(con))
+            using (connection)
             {
+                connection.ConnectionString = con;
                 connection.Open();
-                var obj = connection.Query<T>(procedureName,parameters,null,false,null,CommandType.StoredProcedure).SingleOrDefault();
-                connection.Close();
+                var obj = connection.Query<T>(procedureName, parameters, null, false, null, CommandType.StoredProcedure).SingleOrDefault();
                 return obj;
             }
         }
-        private static List<PropertyInfo> GetProperties(T obj)
+        private List<PropertyInfo> GetProperties(T obj)
         {
             Type type = obj.GetType();
             List<PropertyInfo> properties = new List<PropertyInfo>(type.GetProperties());
@@ -88,7 +92,7 @@ namespace carservice
             }
             return null;
         }
-        private static string InsertQuery(T obj)
+        private string InsertQuery(T obj)
         {
             List<PropertyInfo> properties = GetProperties(obj);
             if (properties != null)
@@ -97,13 +101,13 @@ namespace carservice
                 PropertyInfo lastProperty = properties.Last();
                 foreach (PropertyInfo pr in properties)
                 {
-                    int set=query.Length-1;
-                    string separator = pr.Equals(lastProperty)? "" : ",";
-                    if (!(tableName[0].ToString() + "_id").Equals(pr.Name) && !pr.Name.Equals("id") )
+                    int set = query.Length - 1;
+                    string separator = pr.Equals(lastProperty) ? "" : ",";
+                    if (!(tableName[0].ToString() + "_id").Equals(pr.Name) && !pr.Name.Equals("id"))
                     {
-                        query = query.Insert(set, "@"+pr.Name+separator);
+                        query = query.Insert(set, "@" + pr.Name + separator);
                     }
-                   
+
                 }
                 return query;
             }
@@ -111,4 +115,6 @@ namespace carservice
         }
 
     }
+   
+     
 }
